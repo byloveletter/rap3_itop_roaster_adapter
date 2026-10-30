@@ -1,0 +1,10 @@
+# systemd user unit: ~/.config/systemd/user/roaster-adapter.service
+# Started by ~/.config/autostart/roaster-adapter.desktop once the desktop (and the LCD output) is up.
+[Unit]
+Description=Skywalker roaster adapter (Arduino <-> Artisan bridge, LCD UI)
+
+[Service]
+WorkingDirectory=%h/rap3
+ExecStart=/usr/bin/python3 -m roaster_adapter
+Restart=on-failure
+RestartSec=3

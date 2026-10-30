@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- ~/.config/labwc/rc.xml on the Pi (merged with /etc/xdg/labwc/rc.xml by labwc -m) -->
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <!-- Touch goes to the LCD only. Calibration comes from the udev rule written by touch-calibrate. -->
+  <touch deviceName="ADS7846 Touchscreen" mapToOutput="SPI-1" mouseEmulation="yes" />
+  <!-- The adapter UI opens fullscreen on the LCD. -->
+  <windowRules>
+    <windowRule identifier="roaster-adapter" serverDecoration="no">
+      <action name="MoveToOutput" output="SPI-1" />
+      <action name="ToggleFullscreen" />
+    </windowRule>
+  </windowRules>
+</openbox_config>

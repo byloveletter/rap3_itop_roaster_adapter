@@ -1,0 +1,7 @@
+# ~/.config/autostart/roaster-adapter.desktop, run by lxsession-xdg-autostart at desktop start
+[Desktop Entry]
+Type=Application
+Name=Roaster Adapter
+Exec=sh -c 'systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR; systemctl --user restart roaster-adapter.service'
+X-GNOME-Autostart-enabled=true
+NoDisplay=true
