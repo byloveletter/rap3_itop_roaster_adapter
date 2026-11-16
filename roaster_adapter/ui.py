@@ -5,7 +5,7 @@
 +----------------------+-------------------------+
 |  201.5               | HEAT  [-]  75%  [+]     |
 |  °C  BT              | FAN   [-]  20%  [+]     |
-|  message             | DRUM  [   ON / OFF   ]  |
+|  message  ip:port    | DRUM  [   ON / OFF   ]  |
 +----------------------+-------------------------+
 | [PREHEAT] [CHARGE] [DROP]        [  E-STOP  ]  |
 +------------------------------------------------+
@@ -19,6 +19,7 @@ import time
 import pygame
 
 from .controller import Controller
+from .netinfo import local_ip
 from .widgets import Button, Stepper, Style, draw_text, font
 
 log = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ APP_ID = 'roaster-adapter'
 FPS_IDLE = 2        # redraw rate with nothing changing (timer, staleness)
 FRAME = 1 / 30      # event polling period
 MESSAGE_SECONDS = 5
+IP_REFRESH = 10      # seconds; Wi-Fi may reconnect with another address
 
 BG = (18, 20, 24)
 PANEL = (28, 31, 36)
@@ -50,6 +52,8 @@ class UI:
         self.fullscreen = fullscreen
         self.running = True
         self.screen: pygame.Surface | None = None
+        self._ip: str | None = None
+        self._ip_time = float('-inf')
         self._build()
 
     def _build(self) -> None:
@@ -121,9 +125,18 @@ class UI:
         draw_text(surf, text, 54, HOT if temp is not None else DIM, center=(100, 92), bold=True)
         draw_text(surf, '°C  BT', 16, DIM, center=(100, 132))
         if ctl.preheating:
-            draw_text(surf, st.preheat_detail, 17, WARN, center=(100, 166), bold=True)
+            draw_text(surf, st.preheat_detail, 17, WARN, center=(100, 160), bold=True)
         if st.message and time.monotonic() - st.message_time < MESSAGE_SECONDS:
-            self._wrapped(surf, st.message, 14, TEXT, (100, 198), 180)
+            self._wrapped(surf, st.message, 14, TEXT, (100, 188), 180)
+        draw_text(surf, self._address_text(), 13, DIM, center=(100, 214))
+
+    def _address_text(self) -> str:
+        """What to enter as WebSocket host/port in Artisan."""
+        now = time.monotonic()
+        if now - self._ip_time >= IP_REFRESH:
+            self._ip = local_ip()
+            self._ip_time = now
+        return f'{self._ip}:{self.ctl.s.ws_port}' if self._ip else 'no network'
 
     def _wrapped(self, surf, text, size, color, center, width) -> None:
         words, lines, line = text.split(), [], ''
