@@ -1,7 +1,9 @@
 """Build the Artisan settings file for the Raspberry Pi WebSocket bridge.
 
-Starts from SkywalkerRoaster/ArtisanConfigs/basic-skitop-artisan-settings.aset (read
-only) and changes the device to Artisan's WebSocket device plus the buttons and sliders.
+Starts from ref/skywalker-rpi-bt.aset, the Artisan settings used before with the
+Arduino connected directly (TC4 serial device). Display settings (Celsius, axes,
+event graph, buttons, sliders) are kept; only the device is changed to Artisan's
+WebSocket device and the serial commands are translated to WebSocket commands.
 
 Action numbers are stored differently per place (Artisan main.py: eventactionx(),
 fireslideraction_internal(), recordextraevent()); all of these end up as internal
@@ -18,7 +20,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TEMPLATE = ROOT / 'SkywalkerRoaster/ArtisanConfigs/basic-skitop-artisan-settings.aset'
+TEMPLATE = ROOT / 'ref/skywalker-rpi-bt.aset'
 OUTPUT = ROOT / 'artisan/skywalker-rpi-websocket.aset'
 
 BUTTON_WS, EXTRA_WS, SLIDER_WS = 21, 22, 18
@@ -34,23 +36,22 @@ def ini_list(items) -> str:
 
 
 def changes(host: str, port: int) -> dict[str, dict[str, str]]:
-    extra = [  # label, command, colour, event type (1 = Drum, 4 = no event)
-        (' DRUM ON ', ws('setDrum', 1), '#009202', 1),
-        (' DRUM OFF ', ws('setDrum', 0), '#8a1200', 1),
-        (' BEAN COOL ON ', ws('setCooling', 1), '#0053bb', 4),
-        (' BEAN COOL OFF ', ws('setCooling', 0), '#7e1000', 4),
-        (' BOX COOL ON ', ws('setFilter', 1), '#0051b7', 4),
-        (' BOX COOL OFF ', ws('setFilter', 0), '#801000', 4),
-        ('SHUTDOWN ALL', ws('off'), '#808080', 4),
-        (' EMERGENCY STOP ', ws('estop'), '#ff000e', 4),
+    # Extra event buttons of the template, in order: serial command -> WebSocket command.
+    # Labels, colours and event types stay as in the template.
+    extra = [
+        ws('setFilter', 1),     # Filter Fan On   (FILTER;1)
+        ws('setFilter', 0),     # Filter Fan OFF  (FILTER;0)
+        ws('setDrum', 1),       # Drum On         (DRUM;100)
+        ws('setDrum', 0),       # Drum Off        (DRUM;0)
+        ws('off'),              # E STOP          (OFF, all outputs 0)
     ]
-    n = len(extra)
     return {
         'General': {
             'Delay': '1000',
             # The roaster has one probe; the bridge reports it as both BT and ET.
             'ETcurve': 'false',
             'ETlcd': 'false',
+            'recentRoasts': '@Invalid()',   # file history of the PC the template came from
         },
         'Device': {'id': '111'},
         'WebSocket': {
@@ -68,24 +69,17 @@ def changes(host: str, port: int) -> dict[str, dict[str, str]]:
         },
         'DefaultButtons': {
             # CHARGE, DRY END, FCs, FCe, SCs, SCe, DROP, COOL END
+            # The bridge itself sets heater 0, fan 80 and bean cooling on at DROP.
             'buttonactions': ini_list([BUTTON_WS, 0, 0, 0, 0, 0, BUTTON_WS, BUTTON_WS]),
             'buttonactionstrings': ini_list([ws('charge'), '', '', '', '', '', ws('drop'),
                                              ws('setCooling', 0)]),
-            # ON, OFF, SAMPLE
-            'extrabuttonactions': ini_list([0, BUTTON_WS, 0]),
-            'extrabuttonactionstrings': ini_list(['', ws('off'), '']),
+            # ON (DRUM;100), OFF (OFF), SAMPLE
+            'extrabuttonactions': ini_list([BUTTON_WS, BUTTON_WS, 0]),
+            'extrabuttonactionstrings': ini_list([ws('setDrum', 1), ws('off'), '']),
         },
         'ExtraEventButtons': {
-            'extraeventbuttoncolor': ini_list(c for _, _, c, _ in extra),
-            'extraeventbuttontextcolor': ini_list(['white'] * n),
-            'extraeventsactions': ini_list([EXTRA_WS] * n),
-            'extraeventsactionstrings': ini_list(cmd for _, cmd, _, _ in extra),
-            'extraeventsdescriptions': ini_list([''] * n),
-            'extraeventslabels': ini_list(f'"{label}"' if label != label.strip() else label
-                                          for label, _, _, _ in extra),
-            'extraeventstypes': ini_list(t for _, _, _, t in extra),
-            'extraeventsvalues': ini_list([0] * n),
-            'extraeventsvisibility': ini_list([1] * n),
+            'extraeventsactions': ini_list([EXTRA_WS] * len(extra)),
+            'extraeventsactionstrings': ini_list(extra),
         },
     }
 

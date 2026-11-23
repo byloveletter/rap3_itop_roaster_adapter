@@ -144,7 +144,7 @@ Artisan 버튼과 슬라이더의 동작을 "WebSocket Command"로 설정하고 
 
 ## `SkywalkerRoaster/`는 참고용, 수정 금지
 
-`SkywalkerRoaster/`는 upstream `jmoore52/SkywalkerRoaster`를 가리키는 git 서브모듈이다(`git clone --recurse-submodules`, 또는 `git submodule update --init`). 참고 자료로만 두며 수정하지 않는다. `tools/make_artisan_settings.py`가 이 안의 `.aset`을 템플릿으로 쓰므로 서브모듈이 있어야 한다. Arduino에는 `SkyCommand/SkyCommand.ino`를 그대로 올려 쓰고, 라즈베리파이 프로그램이 이 펌웨어의 동작에 맞춘다. 배선과 로스터 비트뱅 프로토콜은 `SkywalkerRoaster/README.md`에 정리되어 있다.
+`SkywalkerRoaster/`는 upstream `jmoore52/SkywalkerRoaster`를 가리키는 git 서브모듈이다(`git clone --recurse-submodules`, 또는 `git submodule update --init`). 참고 자료로만 두며 수정하지 않는다. Arduino에는 `SkyCommand/SkyCommand.ino`를 그대로 올려 쓰고, 라즈베리파이 프로그램이 이 펌웨어의 동작에 맞춘다. 배선과 로스터 비트뱅 프로토콜은 `SkywalkerRoaster/README.md`에 정리되어 있다.
 
 ## 라즈베리파이가 상대하는 Arduino 인터페이스 (`SkyCommand.ino`)
 
@@ -177,11 +177,13 @@ Artisan 버튼과 슬라이더의 동작을 "WebSocket Command"로 설정하고 
 
 ## Artisan 설정 파일 (`artisan/skywalker-rpi-websocket.aset`)
 
-`tools/make_artisan_settings.py`가 `basic-skitop-artisan-settings.aset`을 복사해서 필요한 키만 바꾼다. 손으로 고치지 말고 스크립트를 고친 뒤 다시 생성한다.
+`tools/make_artisan_settings.py`가 `ref/skywalker-rpi-bt.aset`을 복사해서 필요한 키만 바꾼다. 이 템플릿은 Arduino를 PC에 직접 연결해 쓰던 사용자의 Artisan 설정(TC4 시리얼, BT 버전)이다. 표시 설정(°C, 축, 이벤트 그래프, 버튼, 슬라이더)은 그대로 두고 장치와 명령만 바꾼다. 손으로 고치지 말고 스크립트를 고친 뒤 다시 생성한다.
 - 장치를 WebSocket(`id=111`)으로 바꾸고, `[WebSocket]`에 host/port/path, `STARTonCHARGE=true`, `channel_nodes=BT, ET`, `channel_modes=1, 1`(°C)을 넣는다. 샘플링은 `Delay=1000`이다. ET 곡선과 LCD는 숨긴다(BT 복사본이기 때문).
 - "WebSocket Command"는 저장 위치마다 번호가 다르다. 기본 이벤트 버튼과 ON/OFF 버튼은 21, 추가 이벤트 버튼은 22, 슬라이더는 18이다. Artisan `main.py`의 `eventactionx()`, `fireslideraction_internal()`, `recordextraevent()`가 각각 다르게 내부 번호 22로 바꾸기 때문이다.
 - 명령 문자열은 `send(dict(command='setHeater',value={}))` 형태로 쓴다. 추가 버튼과 슬라이더 문자열에는 Artisan이 `str.format()`을 적용하므로 JSON 리터럴의 `{`가 깨진다. `_`, `$`, `;`, `#`도 Artisan이 특별하게 처리하므로 명령에 넣지 않는다.
-- `Mode=F`는 템플릿 그대로 둔다. °C로 쓰려면 Artisan에서 Config > Temperature > Celsius Mode로 바꾼다. 이 메뉴를 쓰면 Artisan이 축, 단계 등 온도 설정을 함께 변환한다.
+- 시리얼 명령은 같은 의미의 WebSocket 명령으로 옮긴다. 예: `DRUM;100` → `setDrum 1`, 추가 버튼 "E STOP"의 `OFF` → `off`. 추가로 CHARGE 버튼에 `charge`를 넣고, DROP 버튼의 `COOL;100`은 `drop`으로 바꾼다(라즈베리파이가 배출 동작을 한다).
+- 히터·팬 값이 그래프에 숫자로 보이는 것은 템플릿의 `[events]` 설정 덕분이다. `eventsGraphflag=4`(Combo: 단계선 + 값 라벨), `clampEvents=true`(값을 온도 축 0–100에 그대로 그림), `showeventsonbt=true`(ET를 숨기므로 BT 곡선에 표시)이다. `eventsGraphflag=2`(Step)는 값 라벨이 없다.
+- `recentRoasts`(최근 파일 목록)는 지운다.
 
 ## Artisan 설정에서 참고할 값 (`ArtisanConfigs/basic-skitop-artisan-settings.aset`)
 
