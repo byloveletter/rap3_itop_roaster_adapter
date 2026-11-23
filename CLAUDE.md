@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 라즈베리파이 프로그램은 `roaster_adapter/` 패키지다(Python 3, pygame, websockets, pyserial). 이 PC에는 venv가 없어서 실행과 테스트는 라즈베리파이(Raspberry Pi 3B, Debian 13, Python 3.13)에서 한다. 코드는 rsync로 `~/rap3/`에 올린다.
 
 ```
-# 동기화 (이 PC에서)
+# 동기화 (이 PC에서, 또는 deploy/push-to-pi.sh; Pi에서 git pull도 가능)
 sshpass -p <pw> rsync -a --delete --exclude __pycache__ --exclude .pytest_cache roaster_adapter tools tests deploy byloveletter@172.20.30.181:rap3/
 # 테스트 (Pi의 ~/rap3에서)
 python3 -m pytest -q
@@ -34,7 +34,8 @@ tools/dev-run.sh stop
 python3 tools/fake_artisan.py --interval 1 --script "1:heater 80;3:charge"
 # 실제 장비 (--serial 기본값 auto: /dev/ttyACM* 다음 /dev/ttyUSB*)
 python3 -m roaster_adapter [--serial /dev/ttyACM0] [--windowed] [--no-ui] [-v]
-# 설치 (Pi, 자세한 절차는 deploy/README.md)
+# 설치 (Pi, 처음 설치부터 전체 절차는 deploy/README.md)
+deploy/setup.sh [--rotate 90]            # = sudo install-system.sh + install.sh
 sudo deploy/install-system.sh [--rotate 90]   # 패키지, LCD overlay(90 = 180° 뒤집기), 터치 보정 도구
 deploy/install.sh                        # systemd 사용자 서비스 + XDG autostart + labwc rc.xml + 바탕화면 아이콘
 systemctl --user restart roaster-adapter
