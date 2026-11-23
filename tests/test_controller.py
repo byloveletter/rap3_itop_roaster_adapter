@@ -94,6 +94,18 @@ def test_touch_charge_and_drop_push_to_artisan(env):
     assert sent == [('OT1', 0), ('OT2', 80), ('COOL', 100)]
 
 
+def test_next_batch_can_be_charged_after_drop(env):
+    ctl, _, _, _ = env
+    ctl.on_artisan_poll()
+    assert not ctl.roasting
+    ctl.charge('touch')
+    assert ctl.roasting
+    ctl.drop('touch')
+    assert not ctl.roasting
+    ctl.charge('touch')
+    assert ctl.roasting
+
+
 def test_artisan_drop_sets_drop_outputs(env):
     ctl, sent, _, pushes = env
     ctl.on_artisan_command({'command': 'drop'})

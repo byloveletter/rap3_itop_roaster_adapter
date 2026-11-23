@@ -78,8 +78,9 @@ class UI:
         artisan = ctl.artisan_alive()
         controls = artisan and not preheating
         self.heat.enabled = self.fan.enabled = self.drum.enabled = controls
-        self.charge.enabled = controls and st.charge_time is None
-        self.drop.enabled = controls and st.charge_time is not None and st.drop_time is None
+        # A new batch can be charged after the previous DROP.
+        self.charge.enabled = controls and not ctl.roasting
+        self.drop.enabled = controls and ctl.roasting
         self.preheat.enabled = not preheating and st.arduino_connected and ctl.temp_fresh()
         self.preheat.active = preheating
         self.drum.active = st.drum
@@ -102,7 +103,7 @@ class UI:
             mode, color = f'PREHEAT {st.preheat_phase or ""}', WARN
         elif st.watchdog_tripped:
             mode, color = 'ARTISAN LOST', BAD
-        elif st.charge_time is not None and st.drop_time is None:
+        elif ctl.roasting:
             mode, color = 'ROASTING', HOT
         else:
             mode, color = 'READY', TEXT

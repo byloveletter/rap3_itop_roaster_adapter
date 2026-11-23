@@ -100,6 +100,11 @@ class Controller:
     def preheating(self) -> bool:
         return self._preheat_task is not None and not self._preheat_task.done()
 
+    @property
+    def roasting(self) -> bool:
+        """Between CHARGE and DROP."""
+        return self.state.charge_time is not None and self.state.drop_time is None
+
     def artisan_alive(self) -> bool:
         return self._clock() - self.state.artisan_last_poll <= self.s.artisan_watchdog
 
