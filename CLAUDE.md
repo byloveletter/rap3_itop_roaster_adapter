@@ -34,8 +34,9 @@ tools/dev-run.sh stop
 python3 tools/fake_artisan.py --interval 1 --script "1:heater 80;3:charge"
 # 실제 장비 (--serial 기본값 auto: /dev/ttyACM* 다음 /dev/ttyUSB*)
 python3 -m roaster_adapter [--serial /dev/ttyACM0] [--windowed] [--no-ui] [-v]
-# 설치/자동 실행 (Pi, 사용자 단위라 sudo 불필요)
-deploy/install.sh                        # systemd 사용자 서비스 + XDG autostart + labwc rc.xml
+# 설치 (Pi, 자세한 절차는 deploy/README.md)
+sudo deploy/install-system.sh [--rotate 90]   # 패키지, LCD overlay(90 = 180° 뒤집기), 터치 보정 도구
+deploy/install.sh                        # systemd 사용자 서비스 + XDG autostart + labwc rc.xml + 바탕화면 아이콘
 systemctl --user restart roaster-adapter
 journalctl --user -u roaster-adapter -f
 # Artisan 설정 파일 생성 (이 PC)
@@ -48,7 +49,7 @@ python3 tools/make_artisan_settings.py [--host <Pi IP>] [--port 8080]   # -> art
 - 스레드 경계: `arduino.ArduinoLink`만 별도 스레드(pyserial이 blocking)이고, 콜백은 `loop.call_soon_threadsafe`로 asyncio 루프에 넘긴다. 나머지(`controller`, `preheat`, `wsserver`, `ui`)는 모두 한 asyncio 루프에서 돈다.
 - 규칙은 전부 `controller.Controller`에 있다(`_allowed()`가 출처별 권한, `check_watchdog()`가 워치독). UI와 WebSocket은 출처('touch', 'artisan')를 붙여 Controller 메서드를 부르기만 한다.
 - `tools/fake_arduino.py`는 pty 위에서 SkyCommand의 루프 타이밍과 `readString()` 동작을 흉내 낸다. 명령 두 개가 한 번에 읽히면 `LOST`를 찍으므로 링크 타이밍 검증에 쓴다.
-- LCD 설정: `/boot/firmware/config.txt`에 `dtoverlay=piscreen,drm`(ILI9486 DRM + ADS7846 터치). 터치 보정은 바탕화면의 "Touch Calibration"(`/usr/local/sbin/touch-calibrate`, tslib → udev `LIBINPUT_CALIBRATION_MATRIX`). labwc 설정은 `deploy/labwc-rc.xml`(= Pi의 `~/.config/labwc/rc.xml`)이며, UI 창(app_id `roaster-adapter`)을 SPI-1으로 옮겨 전체화면으로 만든다.
+- LCD 설정: `/boot/firmware/config.txt`에 `dtoverlay=piscreen,drm`(ILI9486 DRM + ADS7846 터치). `rotate=90`을 붙이면 180° 뒤집힌다(값은 세로 패널 기준이라 270 기본값과 90이 가로). 터치 보정은 바탕화면의 "Touch Calibration"(`deploy/touch-calibrate/` → `/usr/local/sbin/touch-calibrate`, tslib → udev `LIBINPUT_CALIBRATION_MATRIX`)이고, 화면 방향을 바꾸면 다시 보정한다. labwc 설정은 `deploy/labwc-rc.xml`(= Pi의 `~/.config/labwc/rc.xml`)이며, UI 창(app_id `roaster-adapter`)을 SPI-1으로 옮겨 전체화면으로 만든다.
 
 ## 표시 온도
 

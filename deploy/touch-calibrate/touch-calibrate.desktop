@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Touch Calibration
+Comment=Calibrate the LCD touchscreen (tap the 5 crosshairs)
+Exec=/usr/bin/systemctl start --no-block touch-calibrate.service
+Icon=input-touchpad
+Terminal=false
